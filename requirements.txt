@@ -1,0 +1,11 @@
+dgl==2.1.0
+numpy==1.25.2
+PuLP==2.8.0
+scikit_learn==1.3.0
+scipy==1.13.0
+torch==2.0.1
+dgl==2.1.0
+pandas==2.2.2
+pyaml==24.4.0
+pydantic==2.7.1
+absl-py == 2.1.0
