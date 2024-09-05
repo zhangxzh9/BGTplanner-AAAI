@@ -71,7 +71,7 @@ class SERVER():
     def distribute_one(self, user):
         user.update_local_GNN(self.model)
 
-    def predict(self, valid_data, top_k):
+    def predict(self, valid_data):
         # print('predict')
         valid_user = valid_data[:, 0].astype(int)
         valid_items = valid_data[:, 1].astype(int)
@@ -81,9 +81,6 @@ class SERVER():
 
         self.distribute([self.all_user_list[u] for u in set(valid_user)])
 
-        # hit =  np.zeros_like(top_k,dtype=np.float64)
-        # recall_deno = np.zeros_like(top_k,dtype=np.float64)
-        # precision_deno =np.zeros_like(top_k,dtype=np.float64)
         TP = 0
         FP = 0
         FN = 0
@@ -112,28 +109,12 @@ class SERVER():
         precision = TP / (TP + FP) if (TP + FP) > 0 else 0
         recall = TP / (TP + FN) if (TP + FN) > 0 else 0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-            # 计算指标
-            # relevant_items = set(user_items_indices)
-            # sorted_indices = np.argsort(user_predicted_scores)[::-1]
-            # sorted_items = [x for _, x in sorted(zip(user_predicted_scores, user_items_indices), reverse=True)]
 
-            # for k in range(len(top_k)):
-            #     top_k_items = set(sorted_indices[:top_k[k]])
-            #     hit[k] += len(relevant_items.intersection(top_k_items)) 
-            #     recall_deno[k] += len(relevant_items)
-            #     precision_deno[k] += len(top_k_items)
-
-        # recall = hit / recall_deno
-        # precision = hit / precision_deno
-        # f_1_score = (2 * recall * precision) / (recall + precision)
 
         mae = sum(abs(valid_label - predicted_ratings)) / len(valid_label) if len(valid_label) > 0 else 0
         rmse = np.sqrt(np.sum((valid_label - predicted_ratings) ** 2) / len(valid_label)) if len(valid_label) > 0 else 0
 
         return mae, rmse, f1_score, precision, recall
-        # for i in range(len(users)):
-        #     res_temp = self.all_user_list[users[i]].predict(items[i], self.item_embedding)
-        #     res.append(float(res_temp))
 
     def receive_context(self):
         # item =len(self.item_list)
@@ -186,13 +167,7 @@ class SERVER():
             param.requires_grad= True
             param.grad = gradient_model[i]
         model_optimizer.step()
-        # print('renew')
 
-        # for i in range(len(ls_model_param)):
-
-        #     ls_model_param[i].data = ls_model_param[i].data - self.lr * gradient_model[i]
-
-        # self.item_embedding = self.item_embedding -  self.lr * gradient_item
         self.item_embedding.requires_grad = True
         self.user_embedding.requires_grad = True
         self.item_embedding.grad = gradient_item
@@ -200,8 +175,3 @@ class SERVER():
 
         item_optimizer.step()
         user_optimizer.step()
-        # if round%10==0:
-        # if round<10:
-        # self.user_embedding = self.user_embedding -  self.lr * gradient_user
-        # self.user_embedding = self.user_embedding -  0.001 * gradient_user
-        # return np.mean(loss_list)

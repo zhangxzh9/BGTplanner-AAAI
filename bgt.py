@@ -25,14 +25,8 @@ def processing_valid_data(valid_data,args):
                     res.append((int(key), int(item), rate))
     return np.array(res)
 
-def loss(server, valid_data, top_k):
-    # group_rmse = 
-    # ungroup_rmse = 0
-    # label = valid_data[:, -1]W
-    # mae = sum(abs(label - predicted)) / len(label)
-    # rmse = math.sqrt(sum((label - predicted) ** 2) / len(label))
-
-    return server.predict(valid_data,top_k)
+def loss(server, valid_data):
+    return server.predict(valid_data)
 
 def test(server,valid_data):
     user_rmse, hr_top1, hr_top5, hr_top10  = server.test(valid_data)
@@ -69,7 +63,6 @@ def main_bgt(args):
 
     valid_data = processing_valid_data(valid_data,args)
     # test_data = processing_valid_data(test_data,args)
-    top_k = args.top_k #[1,3,5,10,20,25,50] #top-1-20
 
     for run_times in range(args.total_run_times):
         
@@ -100,10 +93,6 @@ def main_bgt(args):
         cost_value = np.zeros((d, K))
         for i in range(d):
             cost_value[i,: ] = np.array([ action_map_epsilon[key] for key in action_map_epsilon.keys()])
-        # print(cost_value[0,:],cost_value[1,:])
-
-        # for i in range(d):
-        #     cost_value[i,: ] = np.arange(0.25, 1.5, 0.25)
 
         gpr = GaussianProcessRegressor()
         m=d+2
@@ -142,7 +131,7 @@ def main_bgt(args):
         x =[]
 
         x.append(0)
-        mae, rmse, f1_score, precision, recall= loss(server, valid_data, top_k)
+        mae, rmse, f1_score, precision, recall= loss(server, valid_data)
         rmse_list.append(rmse)
 
         his_records = []
@@ -170,7 +159,7 @@ def main_bgt(args):
                         server.train(round=iter_t,action=a)
 
                         # 计算reward
-                        mae, rmse, f1_score, precision, recall= loss(server, valid_data, top_k)
+                        mae, rmse, f1_score, precision, recall= loss(server, valid_data)
                         
                         if np.isnan(rmse):
                             rmse = rmse_list[-1]  
@@ -184,7 +173,6 @@ def main_bgt(args):
                         precision_list.append(precision)
                         recall_list.append(recall)
                         logger.info('Round:{}, stage:1, action:{}, eps: {}, mae: {}, rmse: {}'.format(iter_t, a, action_map_epsilon[a], mae, rmse))
-                        # logger.info('Round:{}, top_k:     {}'.format(iter_t, top_k))
                         logger.info('Round:{}, stage:1, f1_score: {}, precision: {}, recall: {}'.format(iter_t, f1_score, precision, recall))
                         # logger.info('Round:{}'.format(iter_t, precision))
                         # logger.info('Round:{}'.format(iter_t, recall))
@@ -217,7 +205,7 @@ def main_bgt(args):
                 context = server.receive_context()
 
                 server.train(round=iter_t,action=a)
-                mae, rmse, f1_score, precision, recall= loss(server, valid_data, top_k)
+                mae, rmse, f1_score, precision, recall= loss(server, valid_data)
                 if np.isnan(rmse):
                     rmse = rmse_list[-1]  
                 rmse_list.append(rmse)
@@ -239,7 +227,6 @@ def main_bgt(args):
                 recall_list.append(recall)
                 # logger.info('Round:{}, stage:2, action:{}, mae: {}, rmse: {}'.format(iter_t, a, mae, rmse))
                 logger.info('Round:{}, stage:2, action:{}, eps: {}, mae: {}, rmse: {}'.format(iter_t, a, action_map_epsilon[a], mae, rmse))
-                # logger.info('Round:{}, top_k:     {}'.format(iter_t, top_k))
                 logger.info('Round:{}, stage:2, f1_score: {}, precision: {}, recall: {}'.format(iter_t, f1_score, precision, recall))
                 # logger.info('Round:{}'.format(iter_t, precision))
                 # logger.info('Round:{}'.format(iter_t, recall))
@@ -268,9 +255,9 @@ def main_bgt(args):
 
                 server.train(round=iter_t,action=a)
 
-                mae, rmse, f1_score, precision, recall= loss(server, valid_data, top_k)
+                mae, rmse, f1_score, precision, recall= loss(server, valid_data)
                 if np.isnan(rmse):
-                    mae, rmse, f1_score, precision, recall= loss(server, valid_data, top_k)
+                    mae, rmse, f1_score, precision, recall= loss(server, valid_data)
                     rmse = rmse_list[-1]  
                 rmse_list.append(rmse)
 
@@ -286,7 +273,6 @@ def main_bgt(args):
                 recall_list.append(recall)
                 # logger.info('Round:{}, stage:3, action:{}, mae: {}, rmse: {}'.format(iter_t, a, mae, rmse))
                 logger.info('Round:{}, stage:3, action:{}, eps: {}, mae: {}, rmse: {}'.format(iter_t, a, action_map_epsilon[a], mae, rmse))
-                # logger.info('Round:{}, top_k:     {}'.format(iter_t, top_k))
                 logger.info('Round:{}, stage:3, f1_score: {}, precision: {}, recall: {}'.format(iter_t, f1_score, precision, recall))
                 logger.info('Round:{}, stage:3, reward:{}, predict_reawrd: {}'.format(iter_t, reward, reward_value[0][a]))
                 # logger.info('Round:{}'.format(iter_t, precision))
